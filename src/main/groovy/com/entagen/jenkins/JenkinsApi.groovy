@@ -50,9 +50,15 @@ class JenkinsApi {
                 headers: [Accept: 'application/xml'])
         response.data.text
     }
+	
+    void applyJobConfig(ConcreteJob job, List<TemplateJob> templateJobs) {
+        String jobConfig = configForJob(job, templateJobs)
+
+        post('job/' + job.jobName + "/config.xml", jobConfig, [:], ContentType.XML)
+    }
 
     void cloneJobForBranch(ConcreteJob missingJob, List<TemplateJob> templateJobs) {
-        String missingJobConfig = configForMissingJob(missingJob, templateJobs)
+        String missingJobConfig = configForJob(missingJob, templateJobs)
         TemplateJob templateJob = missingJob.templateJob
 
         //Copy job with jenkins copy job api, this will make sure jenkins plugins get the call to make a copy if needed (promoted builds plugin needs this)
@@ -66,8 +72,8 @@ class JenkinsApi {
         post('job/' + job.jobName + '/build')
     }
 
-    String configForMissingJob(ConcreteJob missingJob, List<TemplateJob> templateJobs) {
-        TemplateJob templateJob = missingJob.templateJob
+    String configForJob(ConcreteJob job, List<TemplateJob> templateJobs) {
+        TemplateJob templateJob = job.templateJob
         String config = getJobConfig(templateJob.jobName)
 
         def ignoreTags = ["assignedNode"]
@@ -79,13 +85,13 @@ class JenkinsApi {
             if (ignoreTags.find { it + ">" == prefix}) {
                 return fullMatch
             } else {
-                return "$prefix${missingJob.branchName}<"
+                return "$prefix${job.branchName}<"
             }
         }
 
         // this is in case there are other down-stream jobs that this job calls, we want to be sure we're replacing their names as well
         templateJobs.each {
-            config = config.replaceAll(it.jobName, it.jobNameForBranch(missingJob.branchName))
+            config = config.replaceAll(it.jobName, it.jobNameForBranch(job.branchName))
         }
 
         return config
