@@ -15,6 +15,7 @@ class JenkinsJobManager {
     Boolean dryRun = false
     Boolean noViews = false
     Boolean noDelete = false
+    Boolean alwaysConfig = false
     Boolean startOnCreate = false
 
     JenkinsApi jenkinsApi
@@ -49,14 +50,26 @@ class JenkinsJobManager {
         List<String> nonTemplateBranchNames = allBranchNames - templateBranchName
         List<ConcreteJob> expectedJobs = this.expectedJobs(templateJobs, nonTemplateBranchNames)
 
+        if (alwaysConfig) {
+            applyJobsConfig(expectedJobs, currentTemplateDrivenJobNames, templateJobs)
+        }
         createMissingJobs(expectedJobs, currentTemplateDrivenJobNames, templateJobs)
         if (!noDelete) {
             deleteDeprecatedJobs(currentTemplateDrivenJobNames - expectedJobs.jobName)
         }
     }
 
-    public void createMissingJobs(List<ConcreteJob> expectedJobs, List<String> currentJobs, List<TemplateJob> templateJobs) {
-        List<ConcreteJob> missingJobs = expectedJobs.findAll { !currentJobs.contains(it.jobName) }
+    public void applyJobsConfig(List<ConcreteJob> expectedJobs, List<String> currentJobNames, List<TemplateJob> templateJobs) {
+        List<ConcreteJob> currentJobs = expectedJobs.findAll { currentJobNames.contains(it.jobName) }
+
+        for(ConcreteJob currentJob in currentJobs) {
+            println "Re-applying config to job: ${currentJob.jobName} from ${currentJob.templateJob.jobName}"
+            jenkinsApi.applyJobConfig(currentJob, templateJobs)
+        }
+    }
+	
+    public void createMissingJobs(List<ConcreteJob> expectedJobs, List<String> currentJobNames, List<TemplateJob> templateJobs) {
+        List<ConcreteJob> missingJobs = expectedJobs.findAll { !currentJobNames.contains(it.jobName) }
         if (!missingJobs) return
 
         for(ConcreteJob missingJob in missingJobs) {
