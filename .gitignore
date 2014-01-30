@@ -5,6 +5,9 @@
 *.diff
 build
 .gradle
+.classpath
+.project
+.settings
 
 out
 atlassian-ide-plugin.xml
