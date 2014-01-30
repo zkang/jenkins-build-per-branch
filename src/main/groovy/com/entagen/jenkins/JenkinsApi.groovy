@@ -50,10 +50,13 @@ class JenkinsApi {
                 headers: [Accept: 'application/xml'])
         response.data.text
     }
-	
+
+    boolean needsConfigApplied(String jobName) {
+        getJobConfig(jobName).contains("master")
+    }
+
     void applyJobConfig(ConcreteJob job, List<TemplateJob> templateJobs) {
         String jobConfig = configForJob(job, templateJobs)
-
         post('job/' + job.jobName + "/config.xml", jobConfig, [:], ContentType.XML)
     }
 

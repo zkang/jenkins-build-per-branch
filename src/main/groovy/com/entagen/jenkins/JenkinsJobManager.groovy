@@ -63,8 +63,10 @@ class JenkinsJobManager {
         List<ConcreteJob> currentJobs = expectedJobs.findAll { currentJobNames.contains(it.jobName) }
 
         for(ConcreteJob currentJob in currentJobs) {
-            println "Re-applying config to job: ${currentJob.jobName} from ${currentJob.templateJob.jobName}"
-            jenkinsApi.applyJobConfig(currentJob, templateJobs)
+            if (jenkinsApi.needsConfigApplied(currentJob.jobName)) {
+                println "Re-applying config to job: ${currentJob.jobName} from ${currentJob.templateJob.jobName}"
+                jenkinsApi.applyJobConfig(currentJob, templateJobs)
+            }
         }
     }
 	
